@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Flappy Plane — Yandex Games</title>
+    <link rel="preload" href="background.png" as="image" />
+    <link rel="preload" href="rock.png" as="image" />
+    <link rel="preload" href="rockDown.png" as="image" />
+    <link rel="stylesheet" href="styles.css" />
+    <script type="module" src="js/main.js" defer></script>
+    <script id="ya-sdk-script" src="/sdk.js" async></script>
+    <script>
+      // Fallback to absolute SDK if relative fails or not present (for iframe/local dev)
+      (function ensureYaSdk(){
+        const MAX_WAIT_MS = 2000;
+        const existing = document.getElementById('ya-sdk-script');
+        let timer = setTimeout(() => {
+          if (!window.YaGames) {
+            const s = document.createElement('script');
+            s.src = 'https://yandex.ru/games/sdk/v2';
+            s.async = true;
+            document.head.appendChild(s);
+          }
+        }, MAX_WAIT_MS);
+        window.addEventListener('load', () => {
+          if (window.YaGames) {
+            clearTimeout(timer);
+          }
+        });
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="game" width="480" height="800"></canvas>
+      <div id="hud" class="layer">
+        <div class="score">0</div>
+        <button id="btn-pause" class="icon" title="Пауза">⏸</button>
+        <button id="btn-sound" class="icon" title="Звук">🔊</button>
+        <button id="btn-fullscreen" class="icon" title="Полноэкранный режим">⛶</button>
+      </div>
+
+      <div id="menu" class="layer panel visible">
+        <h1>Flappy Plane</h1>
+        <div class="controls">
+          <button id="btn-start" class="btn btn-primary">Начать</button>
+          <button id="btn-leaderboard" class="btn">Лидерборд</button>
+          <button id="btn-settings" class="btn">Настройки</button>
+        </div>
+        <div id="banner-slot"></div>
+      </div>
+
+      <div id="settings" class="layer panel">
+        <h2>Настройки</h2>
+        <label class="toggle">
+          <input type="checkbox" id="chk-sound" checked />
+          <span>Звук</span>
+        </label>
+        <label class="toggle">
+          <input type="checkbox" id="chk-ghosts" checked />
+          <span>Режим призраков</span>
+        </label>
+        <div class="toggle">
+          <label for="sel-skin">Скин самолёта</label>
+          <select id="sel-skin"></select>
+        </div>
+        <button id="btn-back-settings" class="btn">Назад</button>
+      </div>
+
+      <div id="leaderboard" class="layer panel">
+        <h2>Лидерборд</h2>
+        <div id="lb-list" class="list"></div>
+        <button id="btn-back-lb" class="btn">Назад</button>
+      </div>
+
+      <div id="death" class="layer panel">
+        <h2>Вы проиграли</h2>
+        <p>Ваш счёт: <span id="death-score">0</span></p>
+        <div class="controls">
+          <button id="btn-rewarded" class="btn btn-primary">Смотреть рекламу и продолжить</button>
+          <button id="btn-restart" class="btn">Заново</button>
+        </div>
+      </div>
+
+      <div id="toast" class="toast"></div>
+    </div>
+  </body>
+</html>
