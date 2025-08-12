@@ -9,6 +9,19 @@ import { UI } from './ui.js';
 const CANVAS_ID = 'game';
 const LEADERBOARD_NAME = 'flappy_plane_best';
 
+const SKINS = {
+  blue: ['/Planes/planeBlue1.png','/Planes/planeBlue2.png','/Planes/planeBlue3.png'],
+  green: ['/Planes/planeGreen1.png','/Planes/planeGreen2.png','/Planes/planeGreen3.png'],
+  red: ['/Planes/planeRed1.png','/Planes/planeRed2.png','/Planes/planeRed3.png'],
+  yellow: ['/Planes/planeYellow1.png','/Planes/planeYellow2.png','/Planes/planeYellow3.png']
+};
+const SKIN_ORDER = [
+  { id: 'blue', label: 'Синий', threshold: 0 },
+  { id: 'green', label: 'Зелёный', threshold: 500 },
+  { id: 'red', label: 'Красный', threshold: 1000 },
+  { id: 'yellow', label: 'Жёлтый', threshold: 1500 }
+];
+
 let ysdk = null;
 let game = null;
 let ads = null;
@@ -35,7 +48,8 @@ let ui = null;
     pipeGap: 180,
     pipeIntervalMs: 1450,
     interstitialEveryNDeaths: 2,
-    showBannerOnMenu: false
+    showBannerOnMenu: false,
+    metersPerPixel: 0.2
   };
   const clientFeatures = { lang: env.lang, deviceType };
   const flags = ysdk ? await getFlagsOnce(ysdk, defaultFlags, clientFeatures) : defaultFlags;
@@ -76,22 +90,42 @@ let ui = null;
   if (persistedMuted !== undefined) audio.setMuted(!!persistedMuted);
   ui.setSoundChecked(!audio.isMuted());
 
+  const bestDistance = await storage.getBestDistance();
+  let selectedSkin = await storage.getSelectedSkin();
+  const unlocked = getUnlockedSkins(bestDistance);
+  if (!unlocked.some(s => s.id === selectedSkin && !s.locked)) {
+    selectedSkin = unlocked.filter(s => !s.locked).slice(-1)[0].id;
+    await storage.setSelectedSkin(selectedSkin);
+  }
+  ui.renderSkinOptions(unlocked, selectedSkin);
+  const ghostsOn = (await storage.getSetting('ghosts')) !== false; // default true
+  ui.setGhostsChecked(ghostsOn);
+
   game = new Game({
     canvas,
     assets: {
       bg: '/background.png',
       rock: '/rock.png',
       rockDown: '/rockDown.png',
-      planeFrames: ['/Planes/planeBlue1.png','/Planes/planeBlue2.png','/Planes/planeBlue3.png']
+      planeFrames: SKINS[selectedSkin]
     },
     audio,
     flags,
+    skins: SKINS,
+    selectedSkin,
     onScore: (score) => ui.setScore(score),
-    onDeath: async (score) => {
+    onDistance: async (meters) => {
+      // Unlocks update on the fly (optional)
+    },
+    onOvertake: (name) => ui.showOvertake(name),
+    onDeath: async (score, distanceMeters) => {
       ysdk?.features?.GameplayAPI?.stop();
       const best = await storage.updateBestScore(score, player);
+      const bestDist = await storage.updateBestDistance(distanceMeters);
       await leaderboard.submitScore(score).catch(() => {});
       ui.showDeath(score, best);
+      const newUnlocked = getUnlockedSkins(bestDist);
+      ui.renderSkinOptions(newUnlocked, await storage.getSelectedSkin());
       ads.trackDeath();
     },
     onStart: () => {
@@ -103,6 +137,16 @@ let ui = null;
     onPause: () => ysdk?.features?.GameplayAPI?.stop(),
     onResume: () => ysdk?.features?.GameplayAPI?.start()
   });
+
+  // Ghost opponents setup
+  async function setupGhosts() {
+    if (!ghostsOn || !ysdk) { game.setOpponents([]); return; }
+    const entries = await leaderboard.getRandomOpponents(3).catch(() => []);
+    const metersPerScore = (flags.scrollSpeed * (flags.pipeIntervalMs/1000)) * flags.metersPerPixel;
+    const ghosts = entries.map(e => ({ name: e.name, targetDistance: e.score * metersPerScore }));
+    game.setOpponents(ghosts);
+  }
+  setupGhosts();
 
   // Banner on menu (if configured and supported)
   if (ysdk && flags.showBannerOnMenu) {
@@ -121,6 +165,24 @@ let ui = null;
 
   // Initial UI state
   ui.showMenu(true);
+
+  // Handlers for settings
+  uiHandlers();
+
+  function getUnlockedSkins(bestDist) {
+    return SKIN_ORDER.map(s => ({ ...s, locked: bestDist < s.threshold }));
+  }
+
+  function uiHandlers() {
+    ui.onToggleGhosts = async (v) => { await storage.setSetting('ghosts', !!v); setupGhosts(); };
+    ui.onChangeSkin = async (id) => {
+      const unlocked = getUnlockedSkins(await storage.getBestDistance());
+      const ok = unlocked.some(s => s.id === id && !s.locked);
+      if (!ok) { ui.toastMsg('Скин ещё не открыт'); return; }
+      await storage.setSelectedSkin(id);
+      game.setSkin(id);
+    };
+  }
 })();
 
 async function handleStart() {

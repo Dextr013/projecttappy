@@ -29,6 +29,40 @@ export class Storage {
     return best;
   }
 
+  async getBestDistance() {
+    try {
+      const v = JSON.parse(localStorage.getItem(this.key) || '{}');
+      return v.bestDistance || 0;
+    } catch { return 0; }
+  }
+
+  async updateBestDistance(distanceMeters) {
+    const v = JSON.parse(localStorage.getItem(this.key) || '{}');
+    const bestDistance = Math.max(v.bestDistance || 0, Math.floor(distanceMeters));
+    v.bestDistance = bestDistance;
+    localStorage.setItem(this.key, JSON.stringify(v));
+    const player = await this._player();
+    if (player && player.setData) {
+      try { await player.setData({ [this.key]: v }); } catch {}
+    }
+    return bestDistance;
+  }
+
+  async getSelectedSkin() {
+    const v = JSON.parse(localStorage.getItem(this.key) || '{}');
+    return v.selectedSkin || 'blue';
+  }
+
+  async setSelectedSkin(id) {
+    const v = JSON.parse(localStorage.getItem(this.key) || '{}');
+    v.selectedSkin = id;
+    localStorage.setItem(this.key, JSON.stringify(v));
+    const player = await this._player();
+    if (player && player.setData) {
+      try { await player.setData({ [this.key]: v }); } catch {}
+    }
+  }
+
   async getSetting(name) {
     try { const v = JSON.parse(localStorage.getItem(this.key) || '{}'); return v.settings?.[name]; } catch { return undefined; }
   }

@@ -7,6 +7,8 @@ export class UI {
     this.death = document.getElementById('death');
     this.toast = document.getElementById('toast');
     this.chkSound = document.getElementById('chk-sound');
+    this.chkGhosts = document.getElementById('chk-ghosts');
+    this.selSkin = document.getElementById('sel-skin');
 
     document.getElementById('btn-start').addEventListener('click', handlers.onStart);
     document.getElementById('btn-leaderboard').addEventListener('click', handlers.onOpenLeaderboard);
@@ -26,6 +28,10 @@ export class UI {
     document.getElementById('btn-fullscreen').addEventListener('click', handlers.onToggleFullscreen);
 
     this.chkSound.addEventListener('change', (e) => handlers.onToggleSound(e.target.checked));
+    this.onToggleGhosts = handlers.onToggleGhosts || (() => {});
+    this.onChangeSkin = handlers.onChangeSkin || (() => {});
+    this.chkGhosts.addEventListener('change', (e) => this.onToggleGhosts(e.target.checked));
+    this.selSkin.addEventListener('change', (e) => this.onChangeSkin(e.target.value));
   }
 
   showMenu(v) { this._toggle(this.menu, v); }
@@ -55,6 +61,24 @@ export class UI {
     this.toast.textContent = msg;
     this.toast.classList.add('visible');
     setTimeout(() => this.toast.classList.remove('visible'), ms);
+  }
+
+  setGhostsChecked(on) { if (this.chkGhosts) this.chkGhosts.checked = !!on; }
+
+  renderSkinOptions(options, selectedId) {
+    if (!this.selSkin) return;
+    this.selSkin.innerHTML = '';
+    for (const opt of options) {
+      const o = document.createElement('option');
+      o.value = opt.id; o.textContent = opt.label + (opt.locked ? ` (🔒 ${opt.threshold}м)` : '');
+      o.disabled = !!opt.locked;
+      if (opt.id === selectedId) o.selected = true;
+      this.selSkin.appendChild(o);
+    }
+  }
+
+  showOvertake(name) {
+    this.toastMsg(`Обогнан: ${name}`);
   }
 
   _toggle(el, v) {

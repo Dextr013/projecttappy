@@ -43,4 +43,11 @@ export class Leaderboard {
       return [];
     }
   }
+
+  async getRandomOpponents(count = 3) {
+    const entries = await this.getTop({ includeUser: true, quantityTop: 50 });
+    const others = entries.filter(e => !e.me && e.score > 0);
+    const shuffled = others.sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, count);
+  }
 }

@@ -1,7 +1,7 @@
 const TAU = Math.PI * 2;
 
 export class Game {
-  constructor({ canvas, assets, audio, flags, onScore, onDeath, onStart, onPause, onResume }) {
+  constructor({ canvas, assets, audio, flags, onScore, onDeath, onStart, onPause, onResume, onDistance, onOvertake, selectedSkin = 'blue', skins }) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
     this.assets = assets;
@@ -12,6 +12,15 @@ export class Game {
     this.onStart = onStart;
     this.onPause = onPause;
     this.onResume = onResume;
+    this.onDistance = onDistance;
+    this.onOvertake = onOvertake;
+
+    this.metersPerPixel = this.flags.metersPerPixel || 0.2;
+    this.distanceMeters = 0;
+
+    this.skins = skins || {};
+    this.currentSkin = selectedSkin;
+    this.ghosts = [];
 
     this.state = 'menu'; // menu | running | dead | paused
     this.score = 0;
@@ -43,6 +52,15 @@ export class Game {
     this.images.rock = await load(this.assets.rock);
     this.images.rockDown = await load(this.assets.rockDown);
     for (const f of this.assets.planeFrames) this.planeFrames.push(await load(f));
+    // If skins supplied, preload all frames
+    if (this.skins) {
+      for (const skinId of Object.keys(this.skins)) {
+        const arr = [];
+        for (const src of this.skins[skinId]) arr.push(await load(src));
+        this.skins[skinId] = arr;
+      }
+      this._applySkin(this.currentSkin);
+    }
   }
 
   _bindInput() {
@@ -69,6 +87,24 @@ export class Game {
 
   isRunning() { return this.state === 'running'; }
 
+  setSkin(id) {
+    if (!this.skins || !this.skins[id]) return;
+    this.currentSkin = id;
+    this._applySkin(id);
+  }
+
+  _applySkin(id) {
+    if (this.skins && this.skins[id]) {
+      this.planeFrames = this.skins[id];
+      this.frameIndex = 0;
+    }
+  }
+
+  setOpponents(list) {
+    // list: [{ name, targetDistance }]
+    this.ghosts = Array.isArray(list) ? list.map(g => ({...g, overtaken: false})) : [];
+  }
+
   async start() {
     if (this.state !== 'menu' && this.state !== 'paused') return;
     this._reset();
@@ -90,6 +126,7 @@ export class Game {
 
   async restart() {
     this._reset();
+    this.distanceMeters = 0;
     this.state = 'running';
     this.onResume?.();
   }
@@ -104,6 +141,7 @@ export class Game {
 
   _reset() {
     this.score = 0;
+    this.distanceMeters = 0;
     this.rocks = [];
     this.plane = { x: 120, y: this.canvas.height / 2, vy: 0, r: 28 };
     this.lastPipeMs = 0;
@@ -128,6 +166,10 @@ export class Game {
     // Physics
     this.plane.vy += this.flags.gravity * dt;
     this.plane.y += this.plane.vy * dt;
+
+    // Distance
+    this.distanceMeters += (this.flags.scrollSpeed * dt) * this.metersPerPixel;
+    this.onDistance?.(this.distanceMeters);
 
     // Spawn
     this.lastPipeMs += dt * 1000;
@@ -158,7 +200,7 @@ export class Game {
     if (hitGround || hitTop || this._collides()) {
       this.audio.hit();
       this.state = 'dead';
-      this.onDeath?.(this.score);
+      this.onDeath?.(this.score, this.distanceMeters);
     }
   }
 
@@ -216,6 +258,11 @@ export class Game {
     } else if (this.state === 'dead') {
       this._drawCenterText('Столкновение');
     }
+
+    // Ghosts overlay
+    if (this.ghosts && this.ghosts.length > 0) {
+      this._drawGhosts();
+    }
   }
 
   _drawRotated(img, x, y, w, h, angle) {
@@ -235,6 +282,33 @@ export class Game {
     ctx.font = 'bold 24px system-ui, Arial';
     ctx.textAlign = 'center';
     ctx.fillText(text, world.width/2, world.height/2);
+  }
+
+  _drawGhosts() {
+    const { ctx, world } = this;
+    const maxOffset = world.width * 0.35;
+    ctx.save();
+    ctx.globalAlpha = 0.6;
+    for (const g of this.ghosts) {
+      if (g.overtaken) continue;
+      const diff = g.targetDistance - this.distanceMeters; // meters ahead
+      const dxPixels = Math.max(-maxOffset, Math.min(maxOffset, diff / this.metersPerPixel));
+      const x = this.plane.x + dxPixels;
+      const y = this.plane.y - 80;
+      const pf = this.planeFrames[this.frameIndex];
+      if (pf) this._drawRotated(pf, x, y, 64, 64, 0);
+      ctx.fillStyle = 'white';
+      ctx.font = '12px system-ui, Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(g.name, x, y - 40);
+      if (diff <= 0) {
+        g.overtaken = true;
+        this.onOvertake?.(g.name);
+      }
+    }
+    ctx.restore();
+    // Remove overtaken ghosts to avoid repeated toasts
+    this.ghosts = this.ghosts.filter(g => !g.overtaken);
   }
 
   _loop(ts) {
