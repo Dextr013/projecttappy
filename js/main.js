@@ -10,10 +10,10 @@ const CANVAS_ID = 'game';
 const LEADERBOARD_NAME = 'flappy_plane_best';
 
 const SKINS = {
-  blue: ['/Planes/planeBlue1.png','/Planes/planeBlue2.png','/Planes/planeBlue3.png'],
-  green: ['/Planes/planeGreen1.png','/Planes/planeGreen2.png','/Planes/planeGreen3.png'],
-  red: ['/Planes/planeRed1.png','/Planes/planeRed2.png','/Planes/planeRed3.png'],
-  yellow: ['/Planes/planeYellow1.png','/Planes/planeYellow2.png','/Planes/planeYellow3.png']
+  blue: ['Planes/planeBlue1.png','Planes/planeBlue2.png','Planes/planeBlue3.png'],
+  green: ['Planes/planeGreen1.png','Planes/planeGreen2.png','Planes/planeGreen3.png'],
+  red: ['Planes/planeRed1.png','Planes/planeRed2.png','Planes/planeRed3.png'],
+  yellow: ['Planes/planeYellow1.png','Planes/planeYellow2.png','Planes/planeYellow3.png']
 };
 const SKIN_ORDER = [
   { id: 'blue', label: 'Синий', threshold: 0 },
@@ -104,10 +104,10 @@ let ui = null;
   game = new Game({
     canvas,
     assets: {
-      bg: '/background.png',
-      rock: '/rock.png',
-      rockDown: '/rockDown.png',
-      planeFrames: SKINS[selectedSkin]
+      bg: 'background.png',
+      rock: 'rock.png',
+      rockDown: 'rockDown.png',
+      planeFrames: SKINS[selectedSkin].map(p => p.replace('/Planes/','Planes/'))
     },
     audio,
     flags,
