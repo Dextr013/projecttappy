@@ -1,0 +1,25 @@
+{
+  "name": "workspace",
+  "version": "1.0.0",
+  "description": "- HTML5 game prepared for Yandex Games SDK moderation. - Uses relative SDK `/sdk.js` when uploaded as an archive, with fallback to `https://yandex.ru/games/sdk/v2` for iframe/local dev.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "node build.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Dextr013/projecttappy.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Dextr013/projecttappy/issues"
+  },
+  "homepage": "https://github.com/Dextr013/projecttappy#readme",
+  "devDependencies": {
+    "esbuild": "^0.25.8"
+  },
+  "type": "module"
+}
