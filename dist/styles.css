@@ -1,7 +1,7 @@
 html, body { height: 100%; margin: 0; padding: 0; background: #05090f; color: #fff; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; }
-#app { position: relative; width: 100%; height: 100%; overflow: hidden; }
+#app { position: relative; width: 100%; height: 100%; overflow: hidden; -webkit-touch-callout:none; -webkit-user-select:none; -ms-user-select:none; user-select:none; }
 #game { position: absolute; inset: 0; margin: auto; max-width: 100vw; max-height: 100vh; background: #222 url('background.png') center/cover no-repeat; display: block; }
-.layer { position: absolute; pointer-events: none; inset: 0; display: flex; align-items: center; justify-content: center; }
+.layer { position: absolute; pointer-events: none; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 2; }
 .layer.visible { pointer-events: auto; }
 .panel { flex-direction: column; gap: 12px; background: rgba(0,0,0,0.6); padding: 20px; border-radius: 12px; min-width: 280px; opacity: 0; transform: translateY(8px); transition: opacity .2s ease, transform .2s ease; }
 .panel.visible { opacity: 1; transform: none; }

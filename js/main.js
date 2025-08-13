@@ -5,6 +5,7 @@ import { Leaderboard } from './leaderboard.js';
 import { AudioManager } from './audio.js';
 import { Storage } from './storage.js';
 import { UI } from './ui.js';
+import { getStrings } from './i18n.js';
 
 const CANVAS_ID = 'game';
 const LEADERBOARD_NAME = 'flappy_plane_best';
@@ -39,6 +40,7 @@ let ui = null;
 
   const env = ysdk ? getEnvironment(ysdk) : { appId: 'local', lang: 'ru', tld: 'ru', payload: null };
   const deviceType = ysdk?.deviceInfo?.type || 'desktop';
+  const t = getStrings(env.lang);
 
   // Remote config flags
   const defaultFlags = {
@@ -56,6 +58,21 @@ let ui = null;
 
   // Modules
   const canvas = document.getElementById(CANVAS_ID);
+  function fitCanvas() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const parent = canvas.parentElement;
+    const w = parent.clientWidth; const h = parent.clientHeight;
+    // Keep base internal res, we scale via CSS already; adjust backing store for clarity
+    const baseW = 480, baseH = 800;
+    canvas.width = Math.floor(baseW * dpr);
+    canvas.height = Math.floor(baseH * dpr);
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  fitCanvas();
+  new ResizeObserver(fitCanvas).observe(document.getElementById('app'));
   audio = new AudioManager();
   storage = new Storage(ysdk);
   ads = new Ads(ysdk, { interstitialEveryNDeaths: flags.interstitialEveryNDeaths });
@@ -85,7 +102,10 @@ let ui = null;
     }
   });
 
-  const player = ysdk ? await requestAuthIfNeeded(ysdk) : null;
+  // Apply localized labels
+  applyI18N(t);
+
+  const player = ysdk ? await ysdk.getPlayer({ signed: false }).catch(() => null) : null; // don't block on auth
   const persistedMuted = await storage.getSetting('muted');
   if (persistedMuted !== undefined) audio.setMuted(!!persistedMuted);
   ui.setSoundChecked(!audio.isMuted());
@@ -113,6 +133,7 @@ let ui = null;
     flags,
     skins: SKINS,
     selectedSkin,
+    strings: { pressStart: t.pressStart, pause: t.pause, collision: t.collision },
     onScore: (score) => ui.setScore(score),
     onDistance: async (meters) => {
       // Unlocks update on the fly (optional)
@@ -223,4 +244,29 @@ async function maybeAuthFlow() {
     // Non-authorized — propose auth once per session
     await ysdk.auth.openAuthDialog().catch(() => {});
   }
+}
+
+function applyI18N(t) {
+  document.title = `${t.title} — Yandex Games`;
+  const qs = (sel) => document.querySelector(sel);
+  qs('#menu h1').textContent = t.title;
+  qs('#btn-start').textContent = t.start;
+  qs('#btn-leaderboard').textContent = t.leaderboard;
+  qs('#btn-settings').textContent = t.settings;
+  qs('#settings h2').textContent = t.settings;
+  qs("label[for='sel-skin']")?.remove();
+  const skinWrap = document.querySelector('#settings .toggle:nth-of-type(3)');
+  if (skinWrap) {
+    const lab = document.createElement('label'); lab.htmlFor = 'sel-skin'; lab.textContent = t.skin; skinWrap.prepend(lab);
+  }
+  document.querySelector("label[for='sel-skin']");
+  document.querySelector("label[for='sel-skin']");
+  const soundLbl = document.querySelector('#settings .toggle span'); if (soundLbl) soundLbl.textContent = t.sound;
+  const ghostsLbl = document.querySelectorAll('#settings .toggle span')[1]; if (ghostsLbl) ghostsLbl.textContent = t.ghosts;
+  document.querySelector('#btn-back-settings').textContent = t.back;
+  document.querySelector('#leaderboard h2').textContent = t.leaderboard;
+  document.querySelector('#btn-back-lb').textContent = t.back;
+  document.querySelector('#death h2').textContent = t.youLost;
+  document.querySelector('#btn-rewarded').textContent = t.watchAd;
+  document.querySelector('#btn-restart').textContent = t.restart;
 }

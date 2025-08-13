@@ -1,7 +1,7 @@
 const TAU = Math.PI * 2;
 
 export class Game {
-  constructor({ canvas, assets, audio, flags, onScore, onDeath, onStart, onPause, onResume, onDistance, onOvertake, selectedSkin = 'blue', skins }) {
+  constructor({ canvas, assets, audio, flags, onScore, onDeath, onStart, onPause, onResume, onDistance, onOvertake, selectedSkin = 'blue', skins, strings }) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
     this.assets = assets;
@@ -21,6 +21,7 @@ export class Game {
     this.skins = skins || {};
     this.currentSkin = selectedSkin;
     this.ghosts = [];
+    this.strings = strings || { pressStart: 'Press start', pause: 'Paused', collision: 'Collision' };
 
     this.state = 'menu'; // menu | running | dead | paused
     this.score = 0;
@@ -252,11 +253,11 @@ export class Game {
 
     // State overlays
     if (this.state === 'menu') {
-      this._drawCenterText('Нажмите старт');
+      this._drawCenterText(this.strings.pressStart);
     } else if (this.state === 'paused') {
-      this._drawCenterText('Пауза');
+      this._drawCenterText(this.strings.pause);
     } else if (this.state === 'dead') {
-      this._drawCenterText('Столкновение');
+      this._drawCenterText(this.strings.collision);
     }
 
     // Ghosts overlay
