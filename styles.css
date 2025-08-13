@@ -5,7 +5,7 @@ html, body { height: 100%; margin: 0; padding: 0; background: #05090f; color: #f
 .layer.visible { pointer-events: auto; }
 .panel { flex-direction: column; gap: 12px; background: rgba(0,0,0,0.6); padding: 20px; border-radius: 12px; min-width: 280px; opacity: 0; transform: translateY(8px); transition: opacity .2s ease, transform .2s ease; }
 .panel.visible { opacity: 1; transform: none; }
-#hud { justify-content: space-between; padding: 8px; box-sizing: border-box; }
+#hud { justify-content: space-between; padding: 8px; box-sizing: border-box; pointer-events: auto; }
 #hud .score { font-size: 32px; font-weight: 800; text-shadow: 0 2px 0 rgba(0,0,0,0.5); margin-left: 8px; }
 #hud .icon { background: rgba(0,0,0,0.4); color: #fff; border: 0; border-radius: 10px; padding: 8px 10px; margin-right: 8px; font-size: 18px; cursor: pointer; }
 .btn { background: #2d4059; color: #fff; border: 0; border-radius: 10px; padding: 12px 16px; font-size: 16px; cursor: pointer; }
