@@ -52,7 +52,10 @@ async function run() {
   // Inject compiled script reference into HTML
   const htmlPath = path.join(dist, 'index.html');
   let html = await fs.readFile(htmlPath, 'utf8');
-  html = html.replace('/js/main.js', '/js/bundle.js');
+  // Replace various forms of the original script tag to point to the bundled script
+  html = html.replace('type="module" src="js/main.js"', 'src="js/bundle.js"');
+  html = html.replace('src="/js/main.js"', 'src="/js/bundle.js"');
+  html = html.replace('src="js/main.js"', 'src="js/bundle.js"');
   await fs.writeFile(htmlPath, html);
 
   console.log('Build complete: dist');
